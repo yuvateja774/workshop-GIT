@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NOISE ALTAR — Interactive Web Toy</title>
+  <meta name="description" content="A tiny interactive cyber-oracle made with pure HTML, CSS, and JS." />
+  <style>
+    :root{
+      --bg:#080706;
+      --panel:rgba(255,244,220,.075);
+      --text:#f7eedc;
+      --muted:#b6a98f;
+      --gold:#d8ad54;
+      --jade:#7cffbf;
+      --ember:#ff694a;
+      --line:rgba(255,255,255,.16);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(124,255,191,.20), transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(255,105,74,.16), transparent 35%),
+        radial-gradient(circle at 50% 105%, rgba(216,173,84,.20), transparent 35%),
+        var(--bg);
+      color:var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+    .grain{
+      position:fixed;inset:-40%;
+      z-index:1;pointer-events:none;opacity:.14;
+      background-image:
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size:48px 48px;
+      transform:rotate(-8deg);
+      animation:drift 18s linear infinite;
+      mix-blend-mode:screen;
+    }
+    @keyframes drift{to{transform:rotate(-8deg) translate3d(48px,48px,0)}}
+    main{
+      position:relative;z-index:2;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .shell{
+      width:min(1040px, 100%);
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:18px;
+      align-items:stretch;
+    }
+    .hero,.side{
+      border:1px solid var(--line);
+      background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.035));
+      backdrop-filter:blur(22px);
+      box-shadow:0 30px 90px rgba(0,0,0,.45);
+      border-radius:28px;
+      overflow:hidden;
+      position:relative;
+    }
+    .hero{padding:42px}
+    .hero:before,.side:before{
+      content:"";
+      position:absolute;inset:0;
+      background:linear-gradient(120deg, transparent, rgba(255,255,255,.14), transparent);
+      transform:translateX(-120%);
+      animation:shine 7s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes shine{40%,100%{transform:translateX(120%)}}
+    .badge{
+      display:inline-flex;align-items:center;gap:10px;
+      border:1px solid rgba(216,173,84,.35);
+      color:#ffe6a6;
+      background:rgba(216,173,84,.10);
+      padding:10px 14px;border-radius:999px;
+      font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--jade);
+      box-shadow:0 0 18px var(--jade);
+    }
+    h1{
+      font-size:clamp(52px, 8vw, 105px);
+      line-height:.86;
+      letter-spacing:-.08em;
+      margin:28px 0 22px;
+      max-width:800px;
+    }
+    h1 span{
+      color:transparent;
+      background:linear-gradient(90deg, var(--text), var(--gold), var(--jade));
+      -webkit-background-clip:text;background-clip:text;
+    }
+    p{
+      max-width:640px;
+      color:var(--muted);
+      font-size:18px;
+      line-height:1.7;
+      margin:0 0 28px;
+    }
+    .controls{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+    button{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.2);
+      background:#f7eedc;
+      color:#111;
+      border-radius:16px;
+      padding:14px 18px;
+      font-weight:800;
+      letter-spacing:-.02em;
+      transition:.18s ease;
+    }
+    button.secondary{
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+    }
+    button:hover{transform:translateY(-3px);box-shadow:0 14px 35px rgba(0,0,0,.3)}
+    .side{
+      min-height:520px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:22px;
+    }
+    .orb{
+      aspect-ratio:1;
+      border-radius:50%;
+      margin:auto;
+      width:min(310px, 76%);
+      background:
+        radial-gradient(circle at 35% 28%, #fff7d6, transparent 16%),
+        radial-gradient(circle at 48% 42%, rgba(124,255,191,.95), transparent 28%),
+        radial-gradient(circle at 62% 70%, rgba(255,105,74,.8), transparent 32%),
+        radial-gradient(circle at 50% 50%, rgba(216,173,84,.8), rgba(0,0,0,.1) 58%, rgba(0,0,0,.7));
+      box-shadow:
+        inset 0 -40px 80px rgba(0,0,0,.45),
+        0 0 90px rgba(124,255,191,.22),
+        0 0 110px rgba(255,105,74,.10);
+      animation:pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse{50%{transform:scale(1.045) rotate(3deg);filter:saturate(1.3)}}
+    .readout{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      border-radius:22px;
+      padding:18px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color:#e8d8b4;
+      min-height:124px;
+    }
+    .readout small{display:block;color:var(--jade);margin-bottom:10px}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-top:18px;
+    }
+    .stat{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      background:rgba(255,255,255,.045);
+    }
+    .stat b{font-size:22px;display:block}
+    .stat em{font-style:normal;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}
+    .ticker{
+      position:fixed;left:0;right:0;bottom:18px;z-index:3;
+      display:flex;gap:12px;white-space:nowrap;
+      color:rgba(247,238,220,.45);
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      animation:scroll 22s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes scroll{to{transform:translateX(-50%)}}
+    .cursor{
+      position:fixed;width:18px;height:18px;border-radius:50%;
+      border:1px solid var(--jade);
+      box-shadow:0 0 28px var(--jade);
+      transform:translate(-50%,-50%);
+      pointer-events:none;z-index:9;
+      mix-blend-mode:screen;
+    }
+    @media(max-width:820px){
+      body{overflow:auto}
+      .shell{grid-template-columns:1fr}
+      .hero{padding:28px}
+      .side{min-height:auto}
+      .ticker{display:none}
+      .cursor{display:none}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="field"></canvas>
+  <div class="grain"></div>
+  <div class="cursor" id="cursor"></div>
+
+  <main>
+    <section class="shell">
+      <div class="hero">
+        <div class="badge"><span class="dot"></span> Live artifact / no libraries</div>
+        <h1>NOISE <span>ALTAR</span></h1>
+        <p>
+          A weird little interactive page: move your mouse, click the buttons, and the whole shrine mutates.
+          Upload this as <b>index.html</b> and it just works.
+        </p>
+        <div class="controls">
+          <button id="summon">Summon Signal</button>
+          <button class="secondary" id="invert">Invert Mood</button>
+          <button class="secondary" id="freeze">Freeze Field</button>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="orb" id="orb"></div>
+        <div>
+          <div class="readout">
+            <small>ORACLE OUTPUT</small>
+            <div id="oracle">Click “Summon Signal” to receive a synthetic omen.</div>
+          </div>
+          <div class="stats">
+            <div class="stat"><b id="s1">07</b><em>Pulse</em></div>
+            <div class="stat"><b id="s2">42</b><em>Noise</em></div>
+            <div class="stat"><b id="s3">88</b><em>Luck</em></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="ticker">
+    <span>signal bloom • static temple • jade fire • ember glass • silent machine • </span>
+    <span>signal bloom • static temple • jade fire • ember glass • silent machine • </span>
+    <span>signal bloom • static temple • jade fire • ember glass • silent machine • </span>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("field");
+    const ctx = canvas.getContext("2d");
+    const cursor = document.getElementById("cursor");
+    const oracle = document.getElementById("oracle");
+    const orb = document.getElementById("orb");
+    const stats = [document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3")];
+
+    let w, h, particles = [], frozen = false, inverted = false;
+    const omens = [
+      "The machine approves. Build before the doubt loads.",
+      "A clean idea is hiding under one ugly prototype.",
+      "Your next upload should look illegal to ignore.",
+      "The page is not empty. It is charging.",
+      "Someone will click because the texture feels expensive.",
+      "Do not polish forever. Ship the strange thing.",
+      "Good design is just controlled pressure."
+    ];
+
+    function resize(){
+      w = canvas.width = innerWidth * devicePixelRatio;
+      h = canvas.height = innerHeight * devicePixelRatio;
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+      particles = Array.from({length: Math.min(120, Math.floor(innerWidth / 9))}, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: (Math.random() * 2.8 + .6) * devicePixelRatio,
+        vx: (Math.random() - .5) * .55 * devicePixelRatio,
+        vy: (Math.random() - .5) * .55 * devicePixelRatio,
+        hue: Math.random()
+      }));
+    }
+
+    function draw(){
+      if(!frozen){
+        ctx.clearRect(0,0,w,h);
+        ctx.globalCompositeOperation = "lighter";
+        for(const p of particles){
+          p.x += p.vx; p.y += p.vy;
+          if(p.x < 0 || p.x > w) p.vx *= -1;
+          if(p.y < 0 || p.y > h) p.vy *= -1;
+
+          const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*12);
+          const color = p.hue < .33 ? "124,255,191" : p.hue < .66 ? "216,173,84" : "255,105,74";
+          grad.addColorStop(0, `rgba(${color},.32)`);
+          grad.addColorStop(1, `rgba(${color},0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(p.x,p.y,p.r*12,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+      requestAnimationFrame(draw);
+    }
+
+    addEventListener("resize", resize);
+    addEventListener("pointermove", e => {
+      cursor.style.left = e.clientX + "px";
+      cursor.style.top = e.clientY + "px";
+      const x = e.clientX / innerWidth;
+      const y = e.clientY / innerHeight;
+      document.body.style.backgroundPosition = `${x*40}px ${y*40}px`;
+      orb.style.transform = `rotateX(${(y-.5)*14}deg) rotateY(${(x-.5)*-14}deg)`;
+    });
+
+    document.getElementById("summon").onclick = () => {
+      oracle.textContent = omens[Math.floor(Math.random()*omens.length)];
+      stats.forEach(el => el.textContent = String(Math.floor(Math.random()*90 + 10)).padStart(2,"0"));
+      particles.forEach(p => { p.vx *= 1.35; p.vy *= 1.35; p.hue = Math.random(); });
+    };
+
+    document.getElementById("invert").onclick = () => {
+      inverted = !inverted;
+      document.documentElement.style.filter = inverted ? "invert(1) hue-rotate(160deg)" : "none";
+    };
+
+    document.getElementById("freeze").onclick = () => {
+      frozen = !frozen;
+      document.getElementById("freeze").textContent = frozen ? "Unfreeze Field" : "Freeze Field";
+    };
+
+    resize();
+    draw();
+  </script>
+</body>
+</html>
